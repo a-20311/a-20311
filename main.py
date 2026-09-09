@@ -7,9 +7,8 @@ import pandas as pd
 import requests
 import streamlit as st
 
-
 # Streamlit 페이지 기본 설정 (타이틀, 레이아웃)
-st.set_page_config(page_title="어제 박스오피스", layout="wide")
+st.set_page_config(page_title="일별 박스오피스", layout="wide")
 
 
 # -------------------------------------------------------------------
@@ -45,7 +44,10 @@ def fetch_box_office_data(target_date: str, api_key: str):
 
         # 3) 데이터가 비어있는 경우 처리
         if not daily_list:
-            return None, "해당 날짜의 박스오피스 데이터가 비어 있습니다."
+            return (
+                None,
+                "EMPTY_DATA",
+            )  # 데이터가 빈 경우 식별을 위한 특수 플래그 전달
 
         return daily_list, None
 
@@ -55,9 +57,9 @@ def fetch_box_office_data(target_date: str, api_key: str):
 
 
 # -------------------------------------------------------------------
-# 2. 메인 화면 구성
+# 2. 메인 화면 및 날짜 선택 UI 구성
 # -------------------------------------------------------------------
-st.title("🎬 어제 일별 박스오피스")
+st.title("🎬 일별 박스오피스 조회")
 
 # KOBIS 인증키 불러오기 (secrets.toml 또는 Streamlit Cloud Secrets)
 api_key = st.secrets.get("KOBIS_KEY")
@@ -71,37 +73,61 @@ if not api_key:
     )
     st.stop()
 
-# 한국 표준시(KST) 기준 계산 (서버 시계와 무관하게 동작)
+# 한국 표준시(KST) 기준 어제 날짜 계산 (선택 가능한 가장 늦은 날짜)
 kst_tz = zoneinfo.ZoneInfo("Asia/Seoul")
-now_kst = datetime.now(kst_tz)
-yesterday = now_kst - timedelta(days=1)
-target_date_str = yesterday.strftime("%Y%m%d")  # YYYYMMDD 포맷
-formatted_date_display = yesterday.strftime("%Y년 %m월 %d일")
+now_kst = datetime.now(kst_tz).date()
+yesterday_kst = now_kst - timedelta(days=1)
 
-st.caption(f"기준 날짜: {formatted_date_display} (한국 시간 기준)")
+# 달력 UI로 날짜 선택 (기본값: 어제, max_value: 어제)
+selected_date = st.date_input(
+    "조회할 날짜를 선택하세요 (오늘 날짜 이전만 선택 가능)",
+    value=yesterday_kst,
+    max_value=yesterday_kst,
+)
+
+target_date_str = selected_date.strftime("%Y%m%d")  # API 조회용 (YYYYMMDD)
+formatted_date_display = selected_date.strftime(
+    "%Y년 %m월 %d일"
+)  # 화면 표시용
+
+st.caption(
+    f"선택한 날짜: **{formatted_date_display}** (한국 시간 기준)"
+)
 
 # API 호출
 daily_list, error_msg = fetch_box_office_data(target_date_str, api_key)
 
 # API 오류 및 예외 상황 처리 안내
 if error_msg:
-    st.error("데이터를 불러오지 못했습니다.")
-    st.warning(f"**상세 원인:** {error_msg}")
-    st.info(
-        "💡 **해결 가이드:**\n"
-        "1. KOBIS 개발자 센터에서 API 키가 올바르게 발급되었는지 확인해 주세요.\n"
-        "2. Secrets에 입력한 `KOBIS_KEY` 값 앞뒤에 공백이 들어가지 않았는지 확인해 주세요.\n"
-        "3. KOBIS API 서버 점검 또는 네트워크 통신 문제일 수 있으니 잠시 후 다시 시도해 주세요."
-    )
+    if error_msg == "EMPTY_DATA":
+        # 고른 날짜의 영화 목록이 비어 있는 경우 특수 안내
+        st.info("💡 그날은 아직 집계 전입니다.")
+    else:
+        # 기타 API 오류 발생 시 안내
+        st.error("데이터를 불러오지 못했습니다.")
+        st.warning(f"**상세 원인:** {error_msg}")
+        st.info(
+            "💡 **해결 가이드:**\n"
+            "1. KOBIS 개발자 센터에서 API 키가 올바르게 발급되었는지 확인해 주세요.\n"
+            "2. Secrets에 입력한 `KOBIS_KEY` 값 앞뒤에 공백이 들어가지 않았는지 확인해 주세요.\n"
+            "3. KOBIS API 서버 점검 또는 네트워크 통신 문제일 수 있으니 잠시 후 다시 시도해 주세요."
+        )
     st.stop()
 
 # -------------------------------------------------------------------
-# 3. 데이터 전처리 (문자열 -> 숫자 변환)
+# 3. 데이터 전처리 (문자열 -> 숫자 변환 및 표현 가공)
 # -------------------------------------------------------------------
 df = pd.DataFrame(daily_list)
 
 # 숫자로 변환할 컬럼 목록
-numeric_columns = ["rank", "audiCnt", "audiAcc", "scrnCnt", "showCnt"]
+numeric_columns = [
+    "rank",
+    "rankInten",
+    "audiCnt",
+    "audiAcc",
+    "scrnCnt",
+    "showCnt",
+]
 
 # 문자열 데이터를 정수형(int64)으로 변환
 for col in numeric_columns:
@@ -112,12 +138,36 @@ for col in numeric_columns:
 df = df.sort_values("rank").reset_index(drop=True)
 
 
+# [기능 추가] 전날 대비 순위 증감(rankInten) 화살표 표시 함수
+def format_rank_change(change):
+    if change > 0:
+        return f"🔺 {change}"  # 순위 상승 (빨간색 위 화살표)
+    elif change < 0:
+        return f"🔹 {abs(change)}"  # 순위 하락 (파란색 아래 화살표)
+    else:
+        return "-"  # 변동 없음
+
+
+df["rankChange"] = df["rankInten"].apply(format_rank_change)
+
+
+# [기능 추가] 누적 관객 100만 명 이상 영화 제목 옆 트로피 이모지 붙이기
+def format_movie_title(row):
+    title = row["movieNm"]
+    if row["audiAcc"] >= 1_000_000:
+        return f"🏆 {title}"
+    return title
+
+
+df["displayTitle"] = df.apply(format_movie_title, axis=1)
+
+
 # -------------------------------------------------------------------
 # 4. 1위 영화 지표 카드 (Metrics)
 # -------------------------------------------------------------------
 top_1 = df.iloc[0]
 
-st.subheader(f"🥇 1위: {top_1['movieNm']}")
+st.subheader(f"🥇 1위: {top_1['displayTitle']}")
 
 col1, col2, col3 = st.columns(3)
 with col1:
@@ -149,12 +199,23 @@ st.markdown("---")
 # -------------------------------------------------------------------
 st.subheader("📋 전체 박스오피스 순위")
 
-# 화면에 보여줄 컬럼선택 및 이름 변경
+# 화면에 보여줄 컬럼 선택 및 순서 변경
 display_df = df[
-    ["rank", "movieNm", "openDt", "audiCnt", "audiAcc", "scrnCnt"]
+    [
+        "rank",
+        "rankChange",
+        "displayTitle",
+        "openDt",
+        "audiCnt",
+        "audiAcc",
+        "scrnCnt",
+    ]
 ].copy()
+
+# 출력용 열 이름으로 변경
 display_df.columns = [
     "순위",
+    "전날 대비",
     "영화명",
     "개봉일",
     "관객수",
