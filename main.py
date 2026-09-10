@@ -223,9 +223,41 @@ st.caption("💡 이 그래프로 알 수 있는 것: (여기에 문장을 채�
 
 
 # ------------------------------------------------------------
-# 앞으로 그래프를 추가할 구역 (예: 그래프 5)
+# [그래프 5] 월별 전체 합계 관객수 (막대그래프)
 # ------------------------------------------------------------
-# st.header("📈 그래프 5. (그래프 제목)")
-# fig5 = px.line(...) 또는 px.area(...), px.bar(...) 등
-# st.plotly_chart(fig5, use_container_width=True)
+st.header("📈 그래프 5. 월별 전체 합계 관객수")
+
+# 그래프 4에서 만든 daily_total(기준일자별 전체 합계 관객수)을 재사용합니다.
+# "기준일자"에서 연-월(예: 2026-01) 정보만 뽑아서 새로운 컬럼을 만듭니다.
+# dt.to_period("M")은 날짜를 "연-월" 단위로 바꿔주고,
+# 그 뒤 astype(str)로 문자열(예: "2026-01")로 변환해 그래프 x축에 쓰기 좋게 만듭니다.
+daily_total["연월"] = daily_total["기준일자"].dt.to_period("M").astype(str)
+
+# 같은 연월끼리 합계관객수를 모두 더해서 월별 합계를 구합니다.
+monthly_total = daily_total.groupby("연월")["합계관객수"].sum().reset_index()
+
+# 연월 순서대로 정렬합니다. (문자열이지만 "yyyy-mm" 형식이라 정렬하면 시간순이 됩니다.)
+monthly_total = monthly_total.sort_values("연월")
+
+# Plotly로 막대그래프를 그립니다.
+fig5 = px.bar(
+    monthly_total,
+    x="연월",
+    y="합계관객수",
+    title="월별 TOP10 전체 합계 관객수",
+)
+fig5.update_layout(xaxis_title="연-월", yaxis_title="합계 관객수")
+
+st.plotly_chart(fig5, use_container_width=True)
+
+# 그래프 아래에 이 그래프로 알 수 있는 것을 적는 자리입니다.
+st.caption("💡 이 그래프로 알 수 있는 것: (여기에 문장을 채워주세요)")
+
+
+# ------------------------------------------------------------
+# 앞으로 그래프를 추가할 구역 (예: 그래프 6)
+# ------------------------------------------------------------
+# st.header("📈 그래프 6. (그래프 제목)")
+# fig6 = px.line(...) 또는 px.area(...), px.bar(...) 등
+# st.plotly_chart(fig6, use_container_width=True)
 # st.caption("💡 이 그래프로 알 수 있는 것: (문장을 채워주세요)")
