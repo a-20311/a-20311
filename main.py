@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go  # 원본 선 + 이동평균 선을 함께 그리기 위해 사용
 
 # ------------------------------------------------------------
 # 기본 페이지 설정
@@ -125,9 +126,18 @@ st.caption("💡 이 그래프로 알 수 있는 것: (여기에 문장을 채�
 
 st.header("📈 그래프 3. 누적관객수 상위 5개 영화 비교 (다중 선그래프)")
 
-# movie_ranking은 이미 누적관객수 기준으로 내림차순 정렬되어 있으므로
-# 앞에서부터 5개 영화명만 뽑으면 상위 5개 영화가 됩니다.
-top5_movies = movie_ranking.head(5).index.tolist()
+# 이 데이터는 하루하루의 "박스오피스 TOP10" 기록이기 때문에,
+# 한 영화가 df에 등장한 행(row)의 개수 = 그 영화가 TOP10에 든 일수가 됩니다.
+top10_days_count = df.groupby("영화명").size()
+
+# TOP10에 20일 미만으로 등장한 영화는 꾸준한 흥행이라 보기 어려우므로 제외합니다.
+qualified_movies = top10_days_count[top10_days_count >= 20].index
+
+# 조건을 만족하는 영화들만 대상으로, 누적관객수 기준으로 다시 순위를 매깁니다.
+qualified_ranking = movie_ranking[movie_ranking.index.isin(qualified_movies)]
+
+# 그중 누적관객수가 가장 높은 5개 영화를 선택합니다.
+top5_movies = qualified_ranking.head(5).index.tolist()
 
 # 전체 데이터(df)에서 상위 5개 영화에 해당하는 행만 골라냅니다.
 top5_df = df[df["영화명"].isin(top5_movies)].sort_values("기준일자")
@@ -139,7 +149,7 @@ fig3 = px.line(
     x="기준일자",
     y="누적관객수",
     color="영화명",  # 영화별로 선 색을 다르게, 범례도 자동 생성
-    title="누적관객수 상위 5개 영화의 일자별 누적관객수 변화",
+    title="TOP10 20일 이상 등장 영화 중 누적관객수 상위 5개 영화의 일자별 누적관객수 변화",
 )
 fig3.update_layout(
     xaxis_title="기준일자",
@@ -154,9 +164,9 @@ st.caption("💡 이 그래프로 알 수 있는 것: (여기에 문장을 채�
 
 
 # ------------------------------------------------------------
-# 앞으로 그래프를 추가할 구역 (예: 그래프 4)
+# 앞으로 그래프를 추가할 구역 (예: 그래프 5)
 # ------------------------------------------------------------
-# st.header("📈 그래프 4. (그래프 제목)")
-# fig4 = px.line(...) 또는 px.area(...), px.bar(...) 등
-# st.plotly_chart(fig4, use_container_width=True)
+# st.header("📈 그래프 5. (그래프 제목)")
+# fig5 = px.line(...) 또는 px.area(...), px.bar(...) 등
+# st.plotly_chart(fig5, use_container_width=True)
 # st.caption("💡 이 그래프로 알 수 있는 것: (문장을 채워주세요)")
