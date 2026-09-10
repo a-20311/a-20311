@@ -255,9 +255,84 @@ st.caption("💡 이 그래프로 알 수 있는 것: (여기에 문장을 채�
 
 
 # ------------------------------------------------------------
-# 앞으로 그래프를 추가할 구역 (예: 그래프 6)
+# [그래프 6] 캘린더 히트맵: 주차 × 요일별 합계 관객수
 # ------------------------------------------------------------
-# st.header("📈 그래프 6. (그래프 제목)")
-# fig6 = px.line(...) 또는 px.area(...), px.bar(...) 등
-# st.plotly_chart(fig6, use_container_width=True)
+st.header("📈 그래프 6. 캘린더 히트맵 (주차 × 요일)")
+
+# daily_total(기준일자별 전체 합계 관객수)을 다시 사용합니다.
+# ISO 주차(isocalendar)를 이용하면 "연도-몇 번째 주"를 정확히 구할 수 있습니다.
+iso = daily_total["기준일자"].dt.isocalendar()
+daily_total["ISO_연도"] = iso["year"]
+daily_total["ISO_주차"] = iso["week"]
+
+# weekday()는 월요일=0, 화요일=1, ..., 일요일=6 을 반환합니다.
+daily_total["요일번호"] = daily_total["기준일자"].dt.weekday
+
+# 연도와 주차를 합쳐서 "2026-W01"과 같은 주차 라벨을 만듭니다.
+# 주차 번호를 2자리로 맞춰(zfill) 문자열로 정렬해도 시간순이 유지되게 합니다.
+daily_total["주차라벨"] = (
+    daily_total["ISO_연도"].astype(str)
+    + "-W"
+    + daily_total["ISO_주차"].astype(str).str.zfill(2)
+)
+
+# 주차 라벨이 실제 날짜 순서(오래된 주 -> 최신 주)로 나열되도록
+# 각 주차라벨이 처음 등장한 날짜 기준으로 정렬한 목록을 만듭니다.
+week_order = (
+    daily_total.drop_duplicates("주차라벨")
+    .sort_values("기준일자")["주차라벨"]
+    .tolist()
+)
+
+# 요일은 월요일(0)부터 일요일(6) 순서로 표시합니다.
+weekday_order = [0, 1, 2, 3, 4, 5, 6]
+weekday_labels = ["월", "화", "수", "목", "금", "토", "일"]
+
+# 주차(열) × 요일(행) 형태로 합계관객수를 펼쳐놓은 표(피벗 테이블)를 만듭니다.
+heatmap_values = daily_total.pivot_table(
+    index="요일번호", columns="주차라벨", values="합계관객수", aggfunc="sum"
+).reindex(index=weekday_order, columns=week_order)
+
+# 마우스를 올렸을 때 보여줄 실제 날짜(yyyy-mm-dd)도 같은 모양의 표로 만듭니다.
+heatmap_dates = daily_total.pivot_table(
+    index="요일번호", columns="주차라벨", values="기준일자", aggfunc="first"
+).reindex(index=weekday_order, columns=week_order)
+date_text = heatmap_dates.apply(
+    lambda col: col.dt.strftime("%Y-%m-%d") if col.notna().any() else col
+)
+date_text = date_text.fillna("")  # 데이터가 없는 칸은 빈 문자열로 표시합니다.
+
+# go.Heatmap으로 캘린더 히트맵을 그립니다.
+# colorscale="Reds"는 값이 작을수록 연한 색, 클수록 진한 색으로 표시됩니다.
+fig6 = go.Figure(
+    data=go.Heatmap(
+        z=heatmap_values.values,
+        x=week_order,
+        y=weekday_labels,
+        customdata=date_text.values,
+        colorscale="Reds",
+        colorbar=dict(title="합계 관객수"),
+        # hovertemplate으로 마우스를 올렸을 때 보여줄 내용을 지정합니다.
+        # %{customdata}는 위에서 만든 날짜(yyyy-mm-dd)를 보여줍니다.
+        hovertemplate="날짜: %{customdata}<br>합계 관객수: %{z:,.0f}명<extra></extra>",
+    )
+)
+fig6.update_layout(
+    title="주차 × 요일별 전체 합계 관객수 캘린더 히트맵",
+    xaxis_title="주차",
+    yaxis_title="요일",
+)
+
+st.plotly_chart(fig6, use_container_width=True)
+
+# 그래프 아래에 이 그래프로 알 수 있는 것을 적는 자리입니다.
+st.caption("💡 이 그래프로 알 수 있는 것: (여기에 문장을 채워주세요)")
+
+
+# ------------------------------------------------------------
+# 앞으로 그래프를 추가할 구역 (예: 그래프 7)
+# ------------------------------------------------------------
+# st.header("📈 그래프 7. (그래프 제목)")
+# fig7 = px.line(...) 또는 px.area(...), px.bar(...) 등
+# st.plotly_chart(fig7, use_container_width=True)
 # st.caption("💡 이 그래프로 알 수 있는 것: (문장을 채워주세요)")
