@@ -164,6 +164,65 @@ st.caption("💡 이 그래프로 알 수 있는 것: (여기에 문장을 채�
 
 
 # ------------------------------------------------------------
+# [그래프 4] TOP10 전체 합계 관객수 + 7일 이동평균
+# ------------------------------------------------------------
+st.header("📈 그래프 4. TOP10 전체 합계 관객수와 7일 이동평균")
+
+# 하루하루 TOP10에 오른 영화들의 "해당일관객수"를 모두 더해서
+# 그날의 전체 박스오피스(TOP10) 관객수 합계를 구합니다.
+daily_total = df.groupby("기준일자")["해당일관객수"].sum().reset_index()
+daily_total.columns = ["기준일자", "합계관객수"]
+
+# 날짜순으로 정렬되어 있는지 다시 한 번 확인합니다.
+daily_total = daily_total.sort_values("기준일자")
+
+# rolling(window=7)은 "최근 7개 값의 평균"을 구해줍니다.
+# 날짜별로 정렬된 상태에서 사용하면 "최근 7일간의 평균"이 됩니다.
+# 요일에 따른 들쭉날쭉함(주말에 관객이 몰리는 등)을 완화해서
+# 전체적인 추세를 더 부드럽게 볼 수 있게 해줍니다.
+daily_total["7일_이동평균"] = daily_total["합계관객수"].rolling(window=7).mean()
+
+# 원본 선과 이동평균 선을 한 그래프에 겹쳐 그리기 위해
+# plotly.express 대신 graph_objects(go)를 사용합니다.
+fig4 = go.Figure()
+
+# 원본 합계값 선: 연하게(투명도 낮춤) 표시해서 배경처럼 보이게 합니다.
+fig4.add_trace(
+    go.Scatter(
+        x=daily_total["기준일자"],
+        y=daily_total["합계관객수"],
+        mode="lines",
+        name="일별 합계 관객수 (원본)",
+        line=dict(color="royalblue", width=1),
+        opacity=0.35,  # 값이 낮을수록 더 연하게 표시됩니다.
+    )
+)
+
+# 7일 이동평균 선: 진하고 두껍게 표시해서 추세가 잘 보이게 합니다.
+fig4.add_trace(
+    go.Scatter(
+        x=daily_total["기준일자"],
+        y=daily_total["7일_이동평균"],
+        mode="lines",
+        name="7일 이동평균",
+        line=dict(color="royalblue", width=3),
+    )
+)
+
+fig4.update_layout(
+    title="TOP10 전체 합계 관객수 (원본) 및 7일 이동평균",
+    xaxis_title="기준일자",
+    yaxis_title="합계 관객수",
+    legend_title="구분",
+)
+
+st.plotly_chart(fig4, use_container_width=True)
+
+# 그래프 아래에 이 그래프로 알 수 있는 것을 적는 자리입니다.
+st.caption("💡 이 그래프로 알 수 있는 것: (여기에 문장을 채워주세요)")
+
+
+# ------------------------------------------------------------
 # 앞으로 그래프를 추가할 구역 (예: 그래프 5)
 # ------------------------------------------------------------
 # st.header("📈 그래프 5. (그래프 제목)")
