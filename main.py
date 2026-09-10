@@ -123,10 +123,40 @@ st.plotly_chart(fig2, use_container_width=True)
 st.caption("💡 이 그래프로 알 수 있는 것: (여기에 문장을 채워주세요)")
 
 
+st.header("📈 그래프 3. 누적관객수 상위 5개 영화 비교 (다중 선그래프)")
+
+# movie_ranking은 이미 누적관객수 기준으로 내림차순 정렬되어 있으므로
+# 앞에서부터 5개 영화명만 뽑으면 상위 5개 영화가 됩니다.
+top5_movies = movie_ranking.head(5).index.tolist()
+
+# 전체 데이터(df)에서 상위 5개 영화에 해당하는 행만 골라냅니다.
+top5_df = df[df["영화명"].isin(top5_movies)].sort_values("기준일자")
+
+# Plotly에서 color="영화명"을 지정하면
+# 영화별로 자동으로 다른 색의 선이 그려지고, 범례(legend)도 함께 표시됩니다.
+fig3 = px.line(
+    top5_df,
+    x="기준일자",
+    y="누적관객수",
+    color="영화명",  # 영화별로 선 색을 다르게, 범례도 자동 생성
+    title="누적관객수 상위 5개 영화의 일자별 누적관객수 변화",
+)
+fig3.update_layout(
+    xaxis_title="기준일자",
+    yaxis_title="누적 관객수",
+    legend_title="영화명",
+)
+
+st.plotly_chart(fig3, use_container_width=True)
+
+# 그래프 아래에 이 그래프로 알 수 있는 것을 적는 자리입니다.
+st.caption("💡 이 그래프로 알 수 있는 것: (여기에 문장을 채워주세요)")
+
+
 # ------------------------------------------------------------
-# 앞으로 그래프를 추가할 구역 (예: 그래프 3)
+# 앞으로 그래프를 추가할 구역 (예: 그래프 4)
 # ------------------------------------------------------------
-# st.header("📈 그래프 3. (그래프 제목)")
-# fig3 = px.line(...) 또는 px.area(...), px.bar(...) 등
-# st.plotly_chart(fig3, use_container_width=True)
+# st.header("📈 그래프 4. (그래프 제목)")
+# fig4 = px.line(...) 또는 px.area(...), px.bar(...) 등
+# st.plotly_chart(fig4, use_container_width=True)
 # st.caption("💡 이 그래프로 알 수 있는 것: (문장을 채워주세요)")
