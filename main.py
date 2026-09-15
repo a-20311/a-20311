@@ -52,7 +52,7 @@ st.plotly_chart(fig1, use_container_width=True)
 
 # 그래프 설명 구역
 st.subheader("💡 이 그래프로 알 수 있는 것")
-st.write("박스오피스 상위권 영화 중 특정 장르(예: 드라마다 액션 등)가 차지하는 비중과 전체적인 장르 분포 다양성을 한눈에 파악할 수 있습니다.")
+st.write("박스오피스 상위권 영화 중 특정 장르(예: 드라마, 액션 등)가 차지하는 비중과 전체적인 장르 분포 다양성을 한눈에 파악할 수 있습니다.")
 
 st.divider()
 
@@ -61,7 +61,7 @@ st.divider()
 # ---------------------------------------------------------
 st.header("2. 장르 및 영화별 총 관객 수 분포")
 
-# 트리맵에 표시하기 위해 데이터 결측치 처리 (필요시)
+# 트리맵에 표시하기 위해 데이터 결측치 처리
 df_tree = df.dropna(subset=['genre_clean', 'movieNm', 'total_audi']).copy()
 
 # Plotly 트리맵 생성 (계층 구조: 장르 -> 영화명, 크기: total_audi)
@@ -83,3 +83,42 @@ st.plotly_chart(fig2, use_container_width=True)
 # 그래프 설명 구역
 st.subheader("💡 이 그래프로 알 수 있는 것")
 st.write("각 장르가 전체 관객 수에서 차지하는 비중뿐만 아니라, 특정 장르 내에서 어떤 영화가 흥행을 주도했는지(관객 수 규모)를 직관적으로 비교할 수 있습니다.")
+
+st.divider()
+
+# ---------------------------------------------------------
+# 세 번째 그래프 구역: 총 관객 수 분포 (히스토그램)
+# ---------------------------------------------------------
+st.header("3. 총 관객 수 분포")
+
+# Plotly 히스토그램 생성
+fig3 = px.histogram(
+    df,
+    x='total_audi',
+    nbins=30,
+    title="영화별 총 관객 수 분포 히스토그램",
+    labels={'total_audi': '총 관객 수 (명)', 'count': '영화 수'},
+    color_discrete_sequence=['#636EFA']
+)
+
+fig3.update_traces(
+    hovertemplate="관객 수 구간: %{x}<br>영화 수: %{y}편"
+)
+
+# Y축 레이블 명시
+fig3.update_layout(yaxis_title="영화 수")
+
+# 그래프 출력
+st.plotly_chart(fig3, use_container_width=True)
+
+# 동적 문구 생성을 위한 데이터 계산
+max_movie = df.loc[df['total_audi'].idxmax()]
+max_movie_name = max_movie['movieNm']
+max_movie_audi = max_movie['total_audi']
+
+# 그래프 설명 구역
+st.subheader("💡 이 그래프로 알 수 있는 것")
+st.write(
+    f"대부분의 영화가 **낮은 관객 수 구간(초반 구간)**에 촘촘히 몰려 있는 왼쪽으로 치우친(Right-skewed) 분포를 보이며, "
+    f"가장 관객이 많은 영화는 **'{max_movie_name}'**(총 {max_movie_audi:,}명)입니다."
+)
