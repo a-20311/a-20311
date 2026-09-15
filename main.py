@@ -154,3 +154,37 @@ st.plotly_chart(fig4, use_container_width=True)
 # 그래프 설명 구역
 st.subheader("💡 이 그래프로 알 수 있는 것")
 st.write("개봉 첫날 확보한 스크린 수가 많을수록 대체로 총 관객 수도 증가하는 양의 관계를 나타내지만, 스크린 수 대비 흥행 실적이 유독 뛰어난 영화나 반대로 스크린 확보 대비 아쉬운 성과를 낸 아웃라이어 영화들의 장르별 분포 차이를 함께 확인할 수 있습니다.")
+
+st.divider()
+
+# ---------------------------------------------------------
+# 다섯 번째 그래프 구역: 주요 장르별 총 관객 수 상자 그림 (박스플롯)
+# ---------------------------------------------------------
+st.header("5. 주요 장르별 총 관객 수 상자 그림")
+
+# 영화가 10편 이상인 장르만 필터링
+genre_counts_series = df['genre_clean'].value_counts()
+major_genres = genre_counts_series[genre_counts_series >= 10].index
+df_major_genres = df[df['genre_clean'].isin(major_genres)]
+
+# Plotly 박스플롯 생성
+fig5 = px.box(
+    df_major_genres,
+    x='genre_clean',
+    y='total_audi',
+    color='genre_clean',
+    hover_name='movieNm',
+    points='outliers',
+    title="영화 수 10편 이상 장르의 총 관객 수 박스플롯",
+    labels={
+        'genre_clean': '장르',
+        'total_audi': '총 관객 수 (명)'
+    }
+)
+
+# 그래프 출력
+st.plotly_chart(fig5, use_container_width=True)
+
+# 그래프 설명 구역
+st.subheader("💡 이 그래프로 알 수 있는 것")
+st.write("영화 수가 10편 이상인 주요 장르 간 관객 수의 중간값과 스펙트럼(사분위수 범위)을 비교할 수 있으며, 박스 밖으로 튄 이상치 점을 통해 해당 장르의 대흥행작(아웃라이어)을 명확하게 파악할 수 있습니다.")
