@@ -122,3 +122,35 @@ st.write(
     f"대부분의 영화가 **낮은 관객 수 구간(초반 구간)**에 촘촘히 몰려 있는 왼쪽으로 치우친(Right-skewed) 분포를 보이며, "
     f"가장 관객이 많은 영화는 **'{max_movie_name}'**(총 {max_movie_audi:,}명)입니다."
 )
+
+st.divider()
+
+# ---------------------------------------------------------
+# 네 번째 그래프 구역: 개봉일 스크린 수와 총 관객 수의 관계 (산점도)
+# ---------------------------------------------------------
+st.header("4. 개봉일 스크린 수와 총 관객 수의 관계")
+
+# Plotly 산점도 생성
+fig4 = px.scatter(
+    df,
+    x='first_scrn',
+    y='total_audi',
+    color='genre_clean',
+    hover_name='movieNm',
+    title="개봉일 스크린 수 vs 총 관객 수 산점도",
+    labels={
+        'first_scrn': '개봉일 스크린 수 (개)',
+        'total_audi': '총 관객 수 (명)',
+        'genre_clean': '장르'
+    }
+)
+
+# 점 크기 및 불투명도 조정
+fig4.update_traces(marker=dict(size=9, opacity=0.8))
+
+# 그래프 출력
+st.plotly_chart(fig4, use_container_width=True)
+
+# 그래프 설명 구역
+st.subheader("💡 이 그래프로 알 수 있는 것")
+st.write("개봉 첫날 확보한 스크린 수가 많을수록 대체로 총 관객 수도 증가하는 양의 관계를 나타내지만, 스크린 수 대비 흥행 실적이 유독 뛰어난 영화나 반대로 스크린 확보 대비 아쉬운 성과를 낸 아웃라이어 영화들의 장르별 분포 차이를 함께 확인할 수 있습니다.")
