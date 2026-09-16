@@ -252,3 +252,38 @@ st.plotly_chart(fig7, use_container_width=True)
 # 그래프 설명 구역
 st.subheader("💡 이 그래프로 알 수 있는 것")
 st.write("한국, 미국 등 각 제작 국가별로 어떤 장르의 영화들이 주로 제작되어 상위권에 진입했는지 계층적 비중(영화 편수 기준)을 다차원적으로 파악할 수 있습니다.")
+
+st.divider()
+
+# ---------------------------------------------------------
+# 여덟 번째 그래프 구역: 10위권 머문 날수와 첫 주 관객 수 (산점도)
+# ---------------------------------------------------------
+st.header("8. 10위권 머문 날수와 개봉 첫 주 관객 수의 관계")
+
+# Plotly 산점도 생성
+fig8 = px.scatter(
+    df,
+    x='days_in_top10',
+    y='first_week_audi',
+    color='genre_clean',
+    hover_name='movieNm',
+    title="10위권에 오래 머문 영화는 개봉 첫 주 관객도 많은가",
+    labels={
+        'days_in_top10': '10위권에 머문 날수 (일)',
+        'first_week_audi': '개봉 첫 주 관객 (명)',
+        'genre_clean': '장르'
+    }
+)
+
+# 점 크기 및 불투명도 조정
+fig8.update_traces(
+    marker=dict(size=9, opacity=0.8),
+    hovertemplate="<b>%{hovertext}</b><br>10위권 머문 날수: %{x}일<br>개봉 첫 주 관객: %{y:,}명"
+)
+
+# 그래프 출력
+st.plotly_chart(fig8, use_container_width=True)
+
+# 그래프 설명 구역
+st.subheader("💡 이 그래프로 알 수 있는 것")
+st.write("개봉 첫 주 관객 수가 많은 영화가 대체로 10위권에 오래 유지되는 경향을 보이지만, 초반 동력 대비 입소문(입소문/장기 흥행)으로 오래 10위권을 지킨 영화들도 확인할 수 있습니다.")
