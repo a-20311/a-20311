@@ -188,3 +188,39 @@ st.plotly_chart(fig5, use_container_width=True)
 # 그래프 설명 구역
 st.subheader("💡 이 그래프로 알 수 있는 것")
 st.write("영화 수가 10편 이상인 주요 장르 간 관객 수의 중간값과 스펙트럼(사분위수 범위)을 비교할 수 있으며, 박스 밖으로 튄 이상치 점을 통해 해당 장르의 대흥행작(아웃라이어)을 명확하게 파악할 수 있습니다.")
+
+st.divider()
+
+# ---------------------------------------------------------
+# 여섯 번째 그래프 구역: 개봉 첫 주 관객 수를 반영한 버블 차트
+# ---------------------------------------------------------
+st.header("6. 스크린 수, 총 관객 수, 개봉 첫 주 관객 수 (버블 차트)")
+
+# Plotly 버블 차트 생성 (size=first_week_audi 추가)
+fig6 = px.scatter(
+    df,
+    x='first_scrn',
+    y='total_audi',
+    size='first_week_audi',
+    color='genre_clean',
+    hover_name='movieNm',
+    size_max=40,
+    title="개봉일 스크린 수 vs 총 관객 수 (버블 크기: 개봉 첫 주 관객 수)",
+    labels={
+        'first_scrn': '개봉일 스크린 수 (개)',
+        'total_audi': '총 관객 수 (명)',
+        'first_week_audi': '첫 주 관객 수 (명)',
+        'genre_clean': '장르'
+    }
+)
+
+fig6.update_traces(
+    hovertemplate="<b>%{hovertext}</b><br>개봉일 스크린 수: %{x:,}개<br>총 관객 수: %{y:,}명<br>첫 주 관객 수: %{marker.size:,}명"
+)
+
+# 그래프 출력
+st.plotly_chart(fig6, use_container_width=True)
+
+# 그래프 설명 구역
+st.subheader("💡 이 그래프로 알 수 있는 것")
+st.write("초반 흥행 동력(개봉 첫 주 관객 수)이 장기 흥행(총 관객 수) 및 초기 스크린 확보 수와 어떤 관련이 있는지 원의 크기를 통해 3차원적인 관점에서 분석할 수 있습니다.")
